@@ -1,0 +1,15 @@
+# Python Bytecode / Cache
+__pycache__/
+**/__pycache__/
+
+# Test-Dateien / Test-Ordner
+test/
+**/test/
+test_*.py 
+*_test.py
+
+
+# Virtuelle Umgebungen (optional)
+.venv/
+venv/
+

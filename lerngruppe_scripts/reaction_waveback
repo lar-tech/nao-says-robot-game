@@ -1,0 +1,64 @@
+import sys
+import os
+from naoqi import ALProxy
+file_path = os.path.dirname(os.path.abspath(__file__))
+georg_path = os.path.join(file_path, "..", "georgs-scripte")
+sys.path.append(georg_path)
+from advanced_speech_recognition import EnhancedSpeechRecognitionDemo
+
+
+class SimpleReaction:
+    def __init__(self, command, robotIP = "192.168.1.118", PORT = 9559):
+        self.command = command.lower()
+        self.robotIP = robotIP
+        self.PORT = PORT
+
+    def react_to_command(self):
+        motionProxy = ALProxy("ALMotion",self.robotIP, self.PORT)
+        ttsProxy = ALProxy("ALTextToSpeech", self.robotIP, self.PORT)
+        postureProxy = ALProxy("ALRobotPosture", self.robotIP, self.PORT)
+
+        # NAO says 
+        if self.command == "wave":
+            motionProxy.angleInterpolation("RShoulderPitch", [-1.0, -0.5, -1.0, -0.5, -1.0], [1.0, 1.5, 2.0, 2.5, 3.0], True)
+            ttsProxy.say(f"Movement {self.command} complete!")
+        
+        elif self.command == "stand":
+            postureProxy.goToPosture("Stand", 1.0)
+            ttsProxy.say(f"Movement {self.command} complete!")
+
+        elif self.command =="forward":
+            motionProxy.wakeUp()
+            motionProxy.moveTo(0.2, 0, 0)
+            motionProxy.rest()
+            ttsProxy.say(f"Movement {self.command} complete!")
+
+        elif self.command == "turn":
+            motionProxy.wakeUp()
+            motionProxy.moveTo(0, 0, 3.1415)
+            motionProxy.rest()
+            ttsProxy.say(f"Movement {self.command} complete!")
+
+        else:
+             ttsProxy.say(f"Movement {self.command} not recognized.")
+
+        return 
+
+
+
+
+def main():
+    print("🚀 Starting Enhanced NAO Speech Recognition")
+
+    # Configuration
+    ROBOT_IP = "192.168.1.118"
+
+    # Create and run the EnhancedSpeechRecognition
+    sr = SimpleReaction()
+    esrd = EnhancedSpeechRecognitionDemo(ROBOT_IP)
+
+    
+
+
+if __name__ == "__main__":
+    main()
