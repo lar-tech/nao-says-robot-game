@@ -2,7 +2,9 @@ import sys
 import os
 import math 
 import time
-from naoqi import ALProxy
+import json
+import subprocess
+#from naoqi import ALProxy
 file_path = os.path.dirname(os.path.abspath(__file__))
 georg_path = os.path.join(file_path, "..", "georgs-scripte")
 sys.path.append(georg_path)
@@ -78,10 +80,23 @@ def main():
     # Default IP
     robotIp = "192.168.1.118"
 
-    # Optional: IP und Command per Kommandozeile setzen
-    # Beispiel: python reaction_waveback.py 192.168.1.118 wave
+    # Check if IP is provided as argument
     if len(sys.argv) > 1:
         robotIp = sys.argv[1]
+
+    # Subprocess aufrufen
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    python3 = "/usr/bin/python3"
+    script_py3 = os.path.join(BASE_DIR, "extract_command.py")
+    audio_file = os.path.join(BASE_DIR, "recorded_command.wav")
+
+    # Sicherheitschecks (einmal drin lassen!)
+    assert os.path.isfile(script_py3), script_py3
+    assert os.path.isfile(audio_file), audio_file
+
+    output = subprocess.check_output([python3, script_py3, audio_file])
+    result = json.loads(output)
+    print("Extracted Command:", result)
 
     example_dict = {
         # Predifined postures
@@ -126,6 +141,9 @@ def main():
         func = getattr(motion, details["function"])
         params = details["params"]
         func(**params)
+    
+    elif result:
+        pass
     
     else:
         # No command provided, you can implement a default behavior or interaction here
