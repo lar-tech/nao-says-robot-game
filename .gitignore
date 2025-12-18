@@ -12,3 +12,4 @@ models/
 .vscode/
 .DS_Store
 *.pyc
+*.log
