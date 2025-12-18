@@ -286,7 +286,6 @@ def continuousVisionProcessing(IP, PORT, target_objects=None, max_frames=None):
                 break
 
             frame_count += 1
-            time.sleep(0.5)  # Brief delay between frames
 
     except KeyboardInterrupt:
         print("\nStopped by user.")
