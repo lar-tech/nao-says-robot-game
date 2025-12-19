@@ -4,9 +4,12 @@ from naoqi import ALProxy
 
 class NaoTaskExecutor:
     def __init__(self, ip, port):
-        self.tts = ALProxy("ALTextToSpeech", ip, port)
-        self.leds = ALProxy("ALLeds", ip, port)
-        
+        self.tts_proxy = ALProxy("ALTextToSpeech", ip, port)
+        self.motion_proxy = ALProxy("ALMotion", ip, port)
+        self.posture_proxy = ALProxy("ALRobotPosture", ip, port)
+        self.leds_proxy = ALProxy("ALLeds", ip, port)
+    
+    # lead reaction
     def change_eye_color(self, color):
         color_map = {
             "red": (1.0, 0.0, 0.0),
@@ -29,12 +32,9 @@ class NaoTaskExecutor:
         :param speed: speed of the movement
         :return: None
         """ 
-        ttsProxy = ALProxy("ALTextToSpeech", self.robotIP, self.PORT)
-        postureProxy = ALProxy("ALRobotPosture",self.robotIP, self.PORT)
-        motionProxy = ALProxy("ALMotion",self.robotIP, self.PORT)
-        postureProxy.goToPosture(posture_name, speed)
-        ttsProxy.say("Movement {} complete!".format(posture_name))
-        motionProxy.rest()
+        self.posture_proxy.goToPosture(posture_name, speed)
+        self.tts_proxy.say("Movement {} complete!".format(posture_name))
+        self.motion_proxy.rest()
 
     def move_position(self, x=0.0, y=0.0, theta=0.0):
         """
@@ -44,12 +44,10 @@ class NaoTaskExecutor:
         :param theta: rotation in radians
         :return: None
         """
-        ttsProxy = ALProxy("ALTextToSpeech", self.robotIP, self.PORT)
-        motionProxy = ALProxy("ALMotion",self.robotIP, self.PORT)
-        motionProxy.wakeUp()
-        motionProxy.moveTo(x, y, theta)
-        ttsProxy.say("Movement complete!")
-        motionProxy.rest()
+        self.motion_proxy.wakeUp()
+        self.motion_proxy.moveTo(x, y, theta)
+        self.tts_proxy.say("Movement complete!")
+        self.motion_proxy.rest()
 
     def move_joint(self, joint_name="HeadYaw", angle=0.0, speed=0.1, waitingtime=2.0):
         """
@@ -59,12 +57,11 @@ class NaoTaskExecutor:
         :param speed: speed of the movement (0.0 to 1.0)
         :return: None
         """
-        ttsProxy = ALProxy("ALTextToSpeech", self.robotIP, self.PORT)
-        motionProxy = ALProxy("ALMotion",self.robotIP, self.PORT)
-        motionProxy.wakeUp()
-        motionProxy.setStiffnesses(joint_name, 1.0)
-        motionProxy.setAngles(joint_name, angle, speed)
-        ttsProxy.say("Movement of joint {} complete!".format(joint_name))
+        self.motion_proxy.wakeUp()
+        self.motion_proxy.setStiffnesses(joint_name, 1.0)
+        self.motion_proxy.setAngles(joint_name, angle, speed)
+        self.tts_proxy.say("Movement of joint {} complete!".format(joint_name))
         time.sleep(waitingtime)
-        motionProxy.setStiffnesses(joint_name, 0.0)
-        motionProxy.rest()
+        self.motion_proxy.setStiffnesses(joint_name, 0.0)
+        self.motion_proxy.rest()
+        
