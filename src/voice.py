@@ -8,7 +8,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from RealtimeSTT import AudioToTextRecorder
 
 class NaoVoiceCommand():
-    def __init__(self, model_dir="./models/qwen"):
+    def __init__(self, model_dir):
         # joint settings
         self.joints = ["HeadYaw","HeadPitch",
             "LShoulderPitch","LShoulderRoll","LElbowYaw","LElbowRoll","LWristYaw","LHand",
@@ -30,17 +30,17 @@ class NaoVoiceCommand():
         self.model = AutoModelForCausalLM.from_pretrained(model_dir, local_files_only=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
 
-    def __enter__(self):
-        return self
-    
-    def __exit__(self, *args):
-        self.recorder.shutdown()
+    def close(self):
+        if self.recorder:
+            self.recorder.shutdown()
+            self.recorder = None
 
     def record_audio(self):
         self._done.clear()
         self.recorder.text(self.process_audio)
         self._done.wait()
-        return self.last_cmd
+        
+        return json.dumps(self.last_cmd, ensure_ascii=True)
 
     def process_audio(self, text):
         print("Recognized Text:", text)
