@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 
 from huggingface_hub import snapshot_download
@@ -18,12 +19,11 @@ if __name__ == "__main__":
     # get voice command
     with NaoVoiceCommand() as recorder:
         command = recorder.record_audio()
-
-    print(command)
+    payload = json.dumps(command, ensure_ascii=True)
 
     # execute on robot
     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    cmd = [parent_dir + "/run-naoqi.sh", "python2.7", "src/execute.py", ROBOT_IP, PORT, "Test"]
+    cmd = [parent_dir + "/run-naoqi.sh", "python2.7", "src/execute.py", ROBOT_IP, PORT, payload]
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     
     # results
