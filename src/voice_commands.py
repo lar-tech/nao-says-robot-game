@@ -22,7 +22,7 @@ class NaoVoiceCommand():
             "RHipRoll": (-45.0, 21.73), "RHipPitch": (-88.0, 27.73), "RKneePitch": (0.0, 121.0), "RAnklePitch": (-68.0, 52.87), "RAnkleRoll": (-44.5, 22.84),}
 
         # load audio recorder
-        self.recorder = AudioToTextRecorder(language="en", device="cpu")
+        self.recorder = AudioToTextRecorder(language="en", device="cpu", compute_type="float32")
         self.last_cmd = None
         self._done = threading.Event()
 
