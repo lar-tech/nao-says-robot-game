@@ -1,12 +1,20 @@
 import sys
-import json
+import base64
 
 from src.tasks import NaoTaskExecutor
 
-robot_ip = sys.argv[1]
+# get args
+ip = sys.argv[1]
 port = int(sys.argv[2])
-payload_json = sys.argv[3]
-print(robot_ip, port, payload_json)
+command_json = sys.argv[3]
 
-robot = NaoTaskExecutor(robot_ip, port)
+executor = NaoTaskExecutor(ip, port)
 
+# test commands
+sys.stderr.write("Test")
+jpeg = executor.capture_frame()
+if jpeg is None:
+    sys.stderr.write("No frame\n")
+    sys.exit(1)
+b64 = base64.b64encode(jpeg)
+sys.stdout.write(b64)

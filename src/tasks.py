@@ -1,4 +1,7 @@
 import time
+import io
+from PIL import Image
+
 from inao import NAO
 from naoqi import ALProxy
 
@@ -8,6 +11,14 @@ class NaoTaskExecutor:
         self.motion_proxy = ALProxy("ALMotion", ip, port)
         self.posture_proxy = ALProxy("ALRobotPosture", ip, port)
         self.leds_proxy = ALProxy("ALLeds", ip, port)
+        self.cam_proxy = ALProxy("ALVideoDevice", ip, port)
+        self.resolution = 2  # VGA
+        self.colorSpace = 11  # RGB
+
+    def close(self):
+        if self.video_client:
+            self.cam_proxy.unsubscribe(self.video_client)
+            self.video_client = None
     
     # lead reaction
     def change_eye_color(self, color):
@@ -64,4 +75,16 @@ class NaoTaskExecutor:
         time.sleep(waitingtime)
         self.motion_proxy.setStiffnesses(joint_name, 0.0)
         self.motion_proxy.rest()
-        
+    
+    # vision
+    def capture_frame(self):
+        image = self.cam_proxy.getImageRemote(self.video_client)
+        width = image[0]
+        height = image[1]
+        rgb_bytes = image[6]
+
+        img = Image.frombytes("RGB", (width, height), rgb_bytes)
+
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=80)
+        return buf.getvalue()

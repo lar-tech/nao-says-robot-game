@@ -9,6 +9,7 @@ test_*.py
 .venv/
 venv*/
 models/
+images/
 .vscode/
 .DS_Store
 *.pyc
