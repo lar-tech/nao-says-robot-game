@@ -4,7 +4,6 @@ import subprocess
 
 import cv2
 import numpy as np
-from huggingface_hub import snapshot_download
 
 from src.voice import NaoVoiceCommand
 from src.vision import NaoVision
@@ -16,13 +15,9 @@ if __name__ == "__main__":
     ROBOT_IP = "192.168.1.118"
     PORT = "9559"
     LLM_DIR = "./models/qwen"
-    YOLO_PATH = "./models/yolov8n.pt"
+    YOLO_PATH = "./models/yolov8/yolov8n.pt"
+    MNIST_PATH = "./models/mnist.onnx"
     IMAGE_DIR = "./images"
-    if not os.path.exists(IMAGE_DIR):
-        os.makedirs(IMAGE_DIR)
-    if not os.path.exists(LLM_DIR):
-        local_dir = snapshot_download("Qwen/Qwen2.5-1.5B-Instruct", local_dir=LLM_DIR, local_dir_use_symlinks=False)
-        print("Model downloaded to:", local_dir)
 
     # get voice command
     recorder = NaoVoiceCommand(model_dir=LLM_DIR)
@@ -35,7 +30,7 @@ if __name__ == "__main__":
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
     # decode image
-    vision = NaoVision(model_path=YOLO_PATH)
+    vision = NaoVision(yolo_path=YOLO_PATH)
     jpeg_bytes = base64.b64decode(result.stdout.strip())
     img = cv2.imdecode(np.frombuffer(jpeg_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
     detections = vision.detect_objects(img,target_objects=["person", "bottle"])

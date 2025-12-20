@@ -104,7 +104,7 @@ class NaoVision:
         conf = float(np.max(probs))
         return pred, conf
     
-    def detect_numbers(self, raw_image, verbose=False):
+    def detect_numbers(self, raw_image):
         processed_img = self._preprocess_image(raw_image)
         boxes = self._find_contours(processed_img)
 
@@ -123,17 +123,14 @@ class NaoVision:
         
         numbers = "".join(digits)
 
-        if not verbose:
-            return numbers
-        else:
-            vis = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2BGR)
-            for info in digit_infos:
-                x, y, w, h = info["box"]
-                label = f'{info["pred"]} ({info["conf"]:.2f})'
-                cv2.rectangle(vis, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                cv2.putText(vis, label, (x, max(0, y-8)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2, cv2.LINE_AA)
-            return numbers, vis
+        vis = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2BGR)
+        for info in digit_infos:
+            x, y, w, h = info["box"]
+            label = f'{info["pred"]} ({info["conf"]:.2f})'
+            cv2.rectangle(vis, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv2.putText(vis, label, (x, max(0, y-8)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2, cv2.LINE_AA)
+        return numbers, vis
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -154,11 +151,11 @@ if __name__ == '__main__':
     plt.title(f'{label}')
     plt.show()
     
-    # # number detection
-    # raw_image = cv2.imread("images/numbers.jpg")
-    # numbers, vis = vision.detect_numbers(raw_image)
-    # 
-    # plt.figure()
-    # plt.imshow(cv2.cvtColor(vis, cv2.COLOR_BGR2RGB))
-    # plt.axis('off')
-    # plt.show()
+    # number detection
+    raw_image = cv2.imread("images/numbers.jpg")
+    numbers, vis = vision.detect_numbers(raw_image)
+    
+    plt.figure()
+    plt.imshow(cv2.cvtColor(vis, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
+    plt.show()
