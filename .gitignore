@@ -5,6 +5,7 @@ test/
 **/test/
 test_*.py 
 *_test.py
+*.ipynb
 
 .venv/
 venv*/
