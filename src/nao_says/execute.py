@@ -1,9 +1,6 @@
-import base64
+import json
 import os
 import subprocess
-
-import cv2
-import numpy as np
 
 from nao_says.voice import NaoVoiceCommand
 from nao_says.vision import NaoVision
@@ -22,20 +19,15 @@ def main():
     
     # # get voice command
     # recorder = NaoVoiceCommand(model_dir=llm_dir)
-    # command = recorder.record_audio()
+    # robot_command = recorder.record_audio()
     # recorder.close()
-    command = "test"
 
-    # execute on robot
-    cmd = [os.path.join(docker_dir, "run-naoqi.sh"), "python2.7", "src/nao_bundle/execute.py", ROBOT_IP, PORT, command]
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-
-    # # decode image
-    # vision = NaoVision(yolo_path=yolo_path, mnist_path=mnist_path)
-    # jpeg_bytes = base64.b64decode(result.stdout.strip())
-    # img = cv2.imdecode(np.frombuffer(jpeg_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
-    # detections = vision.detect_objects(img,target_objects=["person", "bottle"])
+    robot_command = json.dumps({"wakeword": True, "action":"change_eye_color", "params":{"color":"red"}})
     
+    # execute on robot
+    cmd = [os.path.join(docker_dir, "run-naoqi.sh"), "python2.7", "src/nao_bundle/execute.py", ROBOT_IP, PORT]
+    result = subprocess.run(cmd, input=robot_command, capture_output=True, text=True, check=False)
+     
     # results
     print("returncode:", result.returncode)
     print("stdout:\n", result.stdout)
