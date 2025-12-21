@@ -1,17 +1,26 @@
+# Python
 __pycache__/
-**/__pycache__/
+*.pyc
+*.pyo
 
+# Packaging
+*.egg-info/
+dist/
+build/
+
+# environment
+.venv/
+venv*/
+.python-version
+.vscode/
+.DS_Store
+
+# tests
 test/
-**/test/
-test_*.py 
 *_test.py
 *.ipynb
 
-.venv/
-venv*/
+# data
 models/
 images/
-.vscode/
-.DS_Store
-*.pyc
 *.log

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nao-says"
+version = "0.1.0"
+description = "NAO interaction and vision pipeline"
+requires-python = ">=3.9"
+
+dependencies = [
+    "opencv-python",
+    "numpy",
+    "torch",
+    "transformers",
+    "ultralytics",
+    "onnxruntime",
+    "huggingface-hub",
+    "RealtimeSTT",
+]
+
+[project.scripts]
+nao-run = "nao_says.execute:main"
+nao-setup-models = "nao_says.setup_models:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
