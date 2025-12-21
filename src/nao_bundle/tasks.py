@@ -1,5 +1,6 @@
 import time
 import io
+import base64
 from PIL import Image
 
 from inao import NAO
@@ -20,7 +21,7 @@ class NaoTaskExecutor:
             self.cam_proxy.unsubscribe(self.video_client)
             self.video_client = None
     
-    # lead reaction
+    # leds
     def change_eye_color(self, color):
         color_map = {
             "red": (1.0, 0.0, 0.0),
@@ -35,7 +36,11 @@ class NaoTaskExecutor:
         self.leds.fadeRGB("FaceLeds", 1.0, 1.0, 1.0, 0.3)
         time.sleep(0.3)
 
-    # motion reaction
+    # speaking
+    def say_text(self, text):
+        self.tts_proxy.say(text)
+
+    # motion
     def posture(self, posture_name="stand", speed=1.0):
         """
         Set the robot in a given posture
@@ -87,4 +92,7 @@ class NaoTaskExecutor:
 
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=80)
-        return buf.getvalue()
+
+        jpeg_bytes = buf.getvalue()
+        jpeg_b64 = base64.b64encode(jpeg_bytes)
+        return jpeg_b64
