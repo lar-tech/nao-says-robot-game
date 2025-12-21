@@ -49,47 +49,88 @@ class NaoVoiceCommand():
 
     def extract_command(self, text: str) -> dict:
         print("Extracting command from text...")
-        prompt = f"""You are a parser for NAO robot commands.
-                        Output ONLY a single JSON object. No markdown. No extra text. No explanations.
+        prompt = f"""
+You are a parser for NAO robot commands.
+Output ONLY a single JSON object. No markdown. No extra text. No explanations.
 
-                        Allowed keys (exactly these, no others):
-                        wakeword, action, distance_m, direction_vector, joint, angle_deg
+Allowed keys (exactly these, no others):
+wakeword, action, params
 
-                        Schema:
-                        {{
-                        "wakeword": true/false,
-                        "action": "move_position" | "posture" | "move_joint",
-                        "distance_m": number | null,
-                        "direction_vector": [number, number, number] | null,
-                        "joint": string | null,
-                        "angle_deg": number | null
-                        }}
+Schema:
+{{
+  "wakeword": true | false,
+  "action": string | null,
+  "params": object | null
+}}
 
-                        Rules:
-                        - wakeword = true if the sentence starts with "Simon says", otherwise false.
-                        - All numbers must be floats (e.g. 1.0, 30.0).
-                        - If a value is not present, use null (not false).
-                        - If nothing can be recognized, return all values as null/false.
-                        - action must be one of the allowed actions, only if you are confident an action is present.
+Rules:
+- wakeword = true ONLY if the sentence starts with "Simon says", otherwise false.
+- If no valid command is recognized, set action = null and params = null.
+- Never invent actions or parameters.
+- All numbers must be floats.
+- If a parameter is not mentioned, omit it from params.
+- params MUST be null if action is null.
 
-                        Direction mapping for direction_vector:
-                        forward = [1, 0, 0]
-                        backward = [-1, 0, 0]
-                        left = [0, -1, 0]
-                        right = [0, 1, 0]
-                        up = [0, 0, 1]
-                        down = [0, 0, -1]
+supported actions and their parameters:
 
-                        Joint names (joint must be exactly one of these if recognized):
-                        {", ".join(self.joints)}
+1. move_position
+params:
+{{
+  "distance_m": number,
+  "direction_vector": [number, number, number],
+  "theta_deg": number
+}}
 
-                        Joint angle (angle_deg) must always be in degrees.
-                        Only output angle_deg if a joint is recognized.
-                        Valid angle ranges:
-                        {", ".join([f'"{joint}": {rng}' for joint, rng in self.joints_angle_ranges.items()])}
+Direction mapping:
+forward = [1, 0, 0]
+backward = [-1, 0, 0]
+left = [0, -1, 0]
+right = [0, 1, 0]
+up = [0, 0, 1]
+down = [0, 0, -1]
 
-                        Sentence: "{text}"
-                    """.strip()
+2. posture
+params:
+{{
+  "posture_name": string
+}}
+
+3. move_joint
+params:
+{{
+  "joint": string,
+  "angle_deg": number
+}}
+
+Valid joint names:
+{", ".join(self.joints)}
+
+Valid joint angle ranges (degrees):
+{", ".join([f'"{joint}": {rng}' for joint, rng in self.joints_angle_ranges.items()])}
+
+4. change_eye_color
+params:
+{{
+  "color": "red" | "green" | "blue" | "yellow"
+}}
+
+5. capture_frame
+params:
+{{}}
+
+6. say_text
+params:
+{{
+  "text": string
+}}
+
+Important:
+- Only include parameters that are explicitly mentioned.
+- Do NOT guess default values.
+- If the user intent is unclear, return action = null.
+
+Sentence: "{text}"
+""".strip()
         self.model.eval()
         inputs = self.tokenizer(prompt, return_tensors="pt")
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
@@ -112,7 +153,9 @@ class NaoVoiceCommand():
         raise ValueError(f"Did not receive valid JSON response from model. Raw: {raw[:200]}...")
 
 if __name__ == '__main__':
-    with NaoVoiceCommand() as recorder:
-        result = recorder.record_audio()
-    
-    print("Extracted Command:", result)
+    import os
+    parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    model_dir = os.path.join(parent_dir, "models", "qwen")
+    recorder = NaoVoiceCommand(model_dir)
+    command = recorder.extract_command("Simon says look with red eyes.")
+    print(command)
