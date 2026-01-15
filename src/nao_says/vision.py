@@ -14,7 +14,7 @@ class NaoVision:
 
     # object detection
     def detect_objects(self, image, target_objects=None):
-        results = self.yolo(image, verbose=False)
+        results = self.yolo(image, conf=0.5, verbose=False)
         detected = []
         for result in results:
             if result.boxes is None:
