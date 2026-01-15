@@ -141,21 +141,27 @@ Sentence: "{text}"
         gen = out[0, inputs["input_ids"].shape[1]:]
         raw = self.tokenizer.decode(gen, skip_special_tokens=True).strip()
 
+        # json format output
         try:
             return json.loads(raw)
         except json.JSONDecodeError:
             pass
-
-        matches = re.findall(r"\{.*?\}", raw, re.DOTALL)
-        if matches:
-            return json.loads(matches[-1])
-
-        raise ValueError(f"Did not receive valid JSON response from model. Raw: {raw[:200]}...")
+        matches = re.findall(r"\{[^{}]*\}", raw)
+        if not matches:
+            matches = re.findall(r"\{.+\}", raw, re.DOTALL)
+        for match in reversed(matches):
+          try:
+              return json.loads(match)
+          except json.JSONDecodeError:
+              continue
+        return None
 
 if __name__ == '__main__':
     import os
     parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     model_dir = os.path.join(parent_dir, "models", "qwen")
     recorder = NaoVoiceCommand(model_dir)
-    command = recorder.extract_command("Simon says look with red eyes.")
+    command = recorder.record_audio()
+    # command = recorder.extract_command("Simon says look with red eyes.")
     print(command)
+    recorder.close()
