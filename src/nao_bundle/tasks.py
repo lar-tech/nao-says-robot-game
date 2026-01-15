@@ -14,7 +14,8 @@ class NaoTaskExecutor:
         self.leds_proxy = ALProxy("ALLeds", ip, port)
         self.cam_proxy = ALProxy("ALVideoDevice", ip, port)
         self.resolution = 2  # VGA
-        self.colorSpace = 11  # RGB
+        self.color_space = 11  # RGB
+        self.video_client = None
 
     def close(self):
         if self.video_client:
@@ -31,9 +32,9 @@ class NaoTaskExecutor:
             }
         if color in color_map:
             rgb = color_map[color]
-            self.leds.fadeRGB("FaceLeds", rgb[0], rgb[1], rgb[2], 0.5)
+            self.leds_proxy.fadeRGB("FaceLeds", rgb[0], rgb[1], rgb[2], 0.5)
         time.sleep(1)
-        self.leds.fadeRGB("FaceLeds", 1.0, 1.0, 1.0, 0.3)
+        self.leds_proxy.fadeRGB("FaceLeds", 1.0, 1.0, 1.0, 0.3)
         time.sleep(0.3)
 
     # speaking
@@ -83,6 +84,7 @@ class NaoTaskExecutor:
     
     # vision
     def capture_frame(self):
+        self.video_client =  self.cam_proxy.subscribe("python_client", self.resolution, self.color_space, 5) # resolution=2, colorspace=11
         image = self.cam_proxy.getImageRemote(self.video_client)
         width = image[0]
         height = image[1]
