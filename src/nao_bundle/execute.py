@@ -50,7 +50,7 @@ def main():
     ip = sys.argv[1]
     port = int(sys.argv[2])
     cmd = json.loads(sys.stdin.read() or "{}")
-    sys.stderr.write("Received command: {}\n".format(cmd))
+    # sys.stderr.write("Received command: {}\n".format(cmd))
     executor = NaoTaskExecutor(ip, port)
 
     try:
