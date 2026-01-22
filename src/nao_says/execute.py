@@ -15,7 +15,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 def main():
     # config
-    ROBOT_IP = "192.168.1.102" # 118
+    ROBOT_IP = "192.168.1.118" # 118
     PORT = "9559"
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     docker_dir = os.path.abspath(os.path.join(project_root, ".."))
@@ -40,6 +40,7 @@ def main():
         cmd = [os.path.join(docker_dir, "run-naoqi.sh"), "python2.7", "src/nao_bundle/execute.py", ROBOT_IP, PORT]
         result = subprocess.run(cmd, input=robot_command, capture_output=True, text=True, check=False)
         match = re.search(r'(/9j/[A-Za-z0-9+/]+=*)', result.stdout)
+        print(result)
         if match:
             print(2)
             jpeg_bytes = base64.b64decode(match.group(1))
