@@ -8,10 +8,6 @@ def to_rad(deg):
     return float(deg) * math.pi / 180.0
 
 def dispatch(executor, cmd):
-    if not cmd.get("wakeword", False):
-        executor.tts_proxy.say("No wakeword.")
-        return
-
     action = cmd.get("action")
     params = cmd.get("params") or {}
 
