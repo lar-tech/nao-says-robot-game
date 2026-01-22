@@ -21,7 +21,6 @@ dependencies = [
 
 [project.scripts]
 nao-run = "nao_says.execute:main"
-nao-setup-models = "nao_says.setup_models:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
