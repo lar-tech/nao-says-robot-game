@@ -31,3 +31,6 @@ def main():
         urllib.request.urlretrieve(mnist_url, mnist_path)
     else:
         print("MNIST model already present.")
+
+if __name__ == "__main__":
+    main()
