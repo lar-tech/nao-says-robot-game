@@ -19,16 +19,18 @@ def main():
     PORT = "9559"
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     docker_dir = os.path.abspath(os.path.join(project_root, ".."))
+    llm_dir = os.path.join(project_root, "models", "qwen")
     yolo_path = os.path.join(project_root, "models", "yolov8n.pt")
     mnist_path = os.path.join(project_root, "models", "mnist.onnx")
 
-    # init vision
-    vision = NaoVision(yolo_path=yolo_path, mnist_path=mnist_path)
-    
-    # # get voice command
+    # # init voice recorder
     # recorder = NaoVoiceCommand(model_dir=llm_dir)
     # robot_command = recorder.record_audio()
     # recorder.close()
+    # print("Robot Command:", robot_command)
+
+    # init vision
+    vision = NaoVision(yolo_path=yolo_path, mnist_path=mnist_path)
 
     robot_command = json.dumps({"wakeword": True, "action":"capture_frame", "params":{}})
 
@@ -44,7 +46,7 @@ def main():
             image = cv2.imdecode(np.frombuffer(jpeg_bytes, np.uint8), cv2.IMREAD_COLOR)
             # numbers, vis = vision.detect_numbers(image)
             # print(numbers)
-            detections = vision.detect_objects(image, target_objects=["person", "bottle", "toothbrush", "ball", "chair", "key"])
+            detections = vision.detect_objects(image, confidence=0.5, target_objects=["person", "bottle", "toothbrush", "ball", "chair", "key"])
             for det in detections:
                 x1, y1, x2, y2 = map(int, det["bbox"])
                 label = f'{det["class"]} {det["confidence"]:.2f}'

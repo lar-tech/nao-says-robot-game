@@ -162,6 +162,6 @@ if __name__ == '__main__':
     model_dir = os.path.join(parent_dir, "models", "qwen")
     recorder = NaoVoiceCommand(model_dir)
     command = recorder.record_audio()
-    # command = recorder.extract_command("Simon says look with red eyes.")
+    command = recorder.extract_command("Simon says look with red eyes.")
     print(command)
     recorder.close()
