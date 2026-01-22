@@ -1,14 +1,13 @@
-
+import os
 import json
 import re
 import threading
 
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+os.environ["HF_HUB_OFFLINE"] = "1"
 from RealtimeSTT import AudioToTextRecorder
 
 class NaoVoiceCommand():
-    def __init__(self, model_dir):
+    def __init__(self):
         # joint settings
         self.joints = ["HeadYaw","HeadPitch",
             "LShoulderPitch","LShoulderRoll","LElbowYaw","LElbowRoll","LWristYaw","LHand",
@@ -22,13 +21,12 @@ class NaoVoiceCommand():
             "RHipRoll": (-45.0, 21.73), "RHipPitch": (-88.0, 27.73), "RKneePitch": (0.0, 121.0), "RAnklePitch": (-68.0, 52.87), "RAnkleRoll": (-44.5, 22.84),}
 
         # load audio recorder
+        print(1)
         self.recorder = AudioToTextRecorder(language="en", device="cpu", compute_type="float32")
+        print(2)
         self.last_cmd = None
         self._done = threading.Event()
-
-        # load model and tokenizer
-        self.model = AutoModelForCausalLM.from_pretrained(model_dir, local_files_only=True)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
+        print(3)
 
     def close(self):
         if self.recorder:
@@ -37,6 +35,9 @@ class NaoVoiceCommand():
 
     def record_audio(self):
         self._done.clear()
+        self.recorder.start()
+        input("Press Enter to stop recording...")
+        self.recorder.stop()
         self.recorder.text(self.process_audio)
         self._done.wait()
         
@@ -44,124 +45,95 @@ class NaoVoiceCommand():
 
     def process_audio(self, text):
         print("Recognized Text:", text)
-        self.last_cmd = self.extract_command(text)
+        self.last_cmd = self.map_command(text)
         self._done.set()
 
-    def extract_command(self, text: str) -> dict:
-        print("Extracting command from text...")
-        prompt = f"""
-You are a parser for NAO robot commands.
-Output ONLY a single JSON object. No markdown. No extra text. No explanations.
+    def map_command(self, text: str) -> dict:
+        text_lower = text.lower().strip()
+        
+        # wakeword check
+        wakeword = text_lower.startswith("simon says")
+        if wakeword:
+            text_lower = text_lower[len("simon says"):].strip()
+        result = {"wakeword": wakeword, "action": None, "params": None}
+        
+        # colors for eye color
+        colors = {"red", "green", "blue", "yellow"}
+        
+        # directions for movement
+        directions = {
+            "forward": [1, 0, 0], "backward": [-1, 0, 0],
+            "left": [0, -1, 0], "right": [0, 1, 0],
+            "up": [0, 0, 1], "down": [0, 0, -1]
+        }
+        
+        # extract number
+        def find_number(s):
+            m = re.search(r"(\d+\.?\d*)", s)
+            return float(m.group(1)) if m else None
 
-Allowed keys (exactly these, no others):
-wakeword, action, params
-
-Schema:
-{{
-  "wakeword": true | false,
-  "action": string | null,
-  "params": object | null
-}}
-
-Rules:
-- wakeword = true ONLY if the sentence starts with "Simon says", otherwise false.
-- If no valid command is recognized, set action = null and params = null.
-- Never invent actions or parameters.
-- All numbers must be floats.
-- If a parameter is not mentioned, omit it from params.
-- params MUST be null if action is null.
-
-supported actions and their parameters:
-
-1. move_position
-params:
-{{
-  "distance_m": number,
-  "direction_vector": [number, number, number],
-  "theta_deg": number
-}}
-
-Direction mapping:
-forward = [1, 0, 0]
-backward = [-1, 0, 0]
-left = [0, -1, 0]
-right = [0, 1, 0]
-up = [0, 0, 1]
-down = [0, 0, -1]
-
-2. posture
-params:
-{{
-  "posture_name": string
-}}
-
-3. move_joint
-params:
-{{
-  "joint": string,
-  "angle_deg": number
-}}
-
-Valid joint names:
-{", ".join(self.joints)}
-
-Valid joint angle ranges (degrees):
-{", ".join([f'"{joint}": {rng}' for joint, rng in self.joints_angle_ranges.items()])}
-
-4. change_eye_color
-params:
-{{
-  "color": "red" | "green" | "blue" | "yellow"
-}}
-
-5. capture_frame
-params:
-{{}}
-
-6. say_text
-params:
-{{
-  "text": string
-}}
-
-Important:
-- Only include parameters that are explicitly mentioned.
-- Do NOT guess default values.
-- If the user intent is unclear, return action = null.
-
-Sentence: "{text}"
-""".strip()
-        self.model.eval()
-        inputs = self.tokenizer(prompt, return_tensors="pt")
-        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
-
-        with torch.no_grad():
-            out = self.model.generate(**inputs, max_new_tokens=160)
-
-        gen = out[0, inputs["input_ids"].shape[1]:]
-        raw = self.tokenizer.decode(gen, skip_special_tokens=True).strip()
-
-        # json format output
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            pass
-        matches = re.findall(r"\{[^{}]*\}", raw)
-        if not matches:
-            matches = re.findall(r"\{.+\}", raw, re.DOTALL)
-        for match in reversed(matches):
-          try:
-              return json.loads(match)
-          except json.JSONDecodeError:
-              continue
-        return None
+        # action matching
+        # change_eye_color
+        if "eye" in text_lower and "color" in text_lower:
+            for color in colors:
+                if color in text_lower:
+                    result["action"] = "change_eye_color"
+                    result["params"] = {"color": color}
+                    return result
+        
+        # capture_frame
+        if any(kw in text_lower for kw in ["capture", "photo", "picture", "snapshot"]):
+            result["action"] = "capture_frame"
+            result["params"] = {}
+            return result
+        
+        # say_text
+        if text_lower.startswith("say "):
+            spoken = text[len("simon says say "):] if wakeword else text[len("say "):]
+            result["action"] = "say_text"
+            result["params"] = {"text": spoken.strip()}
+            return result
+        
+        # posture
+        postures = ["stand", "sit", "crouch", "lyingbelly", "lyingback"]
+        for posture in postures:
+            if posture in text_lower:
+                result["action"] = "posture"
+                result["params"] = {"posture_name": posture.capitalize()}
+                return result
+        
+        # move_position
+        for direction, vec in directions.items():
+            if direction in text_lower:
+                params = {"direction_vector": vec}
+                num = find_number(text_lower)
+                if num:
+                    if "degree" in text_lower or "°" in text_lower:
+                        params["theta_deg"] = num
+                    else:
+                        params["distance_m"] = num
+                result["action"] = "move_position"
+                result["params"] = params
+                return result
+        
+        # TODO: mapping raise left arm to predefined joint angles
+        # e.g., raise left arm
+        # move_joint
+        for joint in self.joints:
+            if joint.lower() in text_lower:
+                angle = find_number(text_lower)
+                if angle:
+                    result["action"] = "move_joint"
+                    result["params"] = {"joint": joint, "angle_deg": angle}
+                    return result
+        
+        return result
 
 if __name__ == '__main__':
     import os
     parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    model_dir = os.path.join(parent_dir, "models", "qwen")
-    recorder = NaoVoiceCommand(model_dir)
+    recorder = NaoVoiceCommand()
     command = recorder.record_audio()
-    command = recorder.extract_command("Simon says look with red eyes.")
+    # command = recorder.map_command("Simon says sit down.")
     print(command)
     recorder.close()
