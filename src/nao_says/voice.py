@@ -1,13 +1,13 @@
 import os
 import json
 import re
-import threading
 
-os.environ["HF_HUB_OFFLINE"] = "1"
-from RealtimeSTT import AudioToTextRecorder
+import numpy as np
+from faster_whisper import WhisperModel
+import pyaudio
 
 class NaoVoiceCommand():
-    def __init__(self):
+    def __init__(self, model_dir="./setup/whisper"):
         # joint settings
         self.joints = ["HeadYaw","HeadPitch",
             "LShoulderPitch","LShoulderRoll","LElbowYaw","LElbowRoll","LWristYaw","LHand",
@@ -21,33 +21,26 @@ class NaoVoiceCommand():
             "RHipRoll": (-45.0, 21.73), "RHipPitch": (-88.0, 27.73), "RKneePitch": (0.0, 121.0), "RAnklePitch": (-68.0, 52.87), "RAnkleRoll": (-44.5, 22.84),}
 
         # load audio recorder
-        print(1)
-        self.recorder = AudioToTextRecorder(language="en", device="cpu", compute_type="float32")
-        print(2)
-        self.last_cmd = None
-        self._done = threading.Event()
-        print(3)
+        self.model = WhisperModel("small", device="cpu", compute_type="float32", download_root=model_dir, local_files_only=True)
+        self.audio = pyaudio.PyAudio()
+        self.sample_rate = 16000
 
-    def close(self):
-        if self.recorder:
-            self.recorder.shutdown()
-            self.recorder = None
+    def record_audio(self, duration=5):
+        stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=self.sample_rate, input=True, frames_per_buffer=1024)
+        frames = []
+        for _ in range(0, int(self.sample_rate / 1024 * duration)):
+            data = stream.read(1024)
+            frames.append(np.frombuffer(data, dtype=np.int16))
+        stream.stop_stream()
+        stream.close()
+        audio_data = np.concatenate(frames).astype(np.float32) / 32768.0
 
-    def record_audio(self):
-        self._done.clear()
-        self.recorder.start()
-        input("Press Enter to stop recording...")
-        self.recorder.stop()
-        self.recorder.text(self.process_audio)
-        self._done.wait()
-        
-        return json.dumps(self.last_cmd, ensure_ascii=True)
-
-    def process_audio(self, text):
-        print("Recognized Text:", text)
-        self.last_cmd = self.map_command(text)
-        self._done.set()
-
+        return audio_data
+    
+    def transcribe(self, audio_data):
+        segments, _ = self.model.transcribe(audio_data, language="en")
+        return " ".join(segment.text for segment in segments).strip()
+    
     def map_command(self, text: str) -> dict:
         text_lower = text.lower().strip()
         
@@ -129,11 +122,14 @@ class NaoVoiceCommand():
         
         return result
 
+    def get_command(self, duration=5):
+        print("Recording audio...")
+        audio = self.record_audio(duration=duration)
+        transcript = self.transcribe(audio)
+        print(f"Transcript: {transcript}")
+        return self.map_command(transcript)
+
 if __name__ == '__main__':
-    import os
-    parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     recorder = NaoVoiceCommand()
-    command = recorder.record_audio()
-    # command = recorder.map_command("Simon says sit down.")
+    command = recorder.get_command(duration=5)
     print(command)
-    recorder.close()
