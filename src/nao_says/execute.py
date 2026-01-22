@@ -24,29 +24,31 @@ audio_dir = "./setup/whisper"
 recorder = NaoVoiceCommand(model_dir=audio_dir)
 vision = NaoVision(yolo_path=yolo_path)
 
-command = recorder.get_command(duration=2)
-print(command)
-
 while True:
+    command = recorder.get_command()
+    print(f"Executing: {command}")
+    
     # execute on robot
     cmd = [os.path.join(docker_dir, "run-naoqi.sh"), "python2.7", "src/nao_bundle/execute.py", ROBOT_IP, PORT]
     result = subprocess.run(cmd, input=command, capture_output=True, text=True, check=False)
     print(result.stdout)
-    match = re.search(r'(/9j/[A-Za-z0-9+/]+=*)', result.stdout)
-    if match:
-        jpeg_bytes = base64.b64decode(match.group(1))
-        image = cv2.imdecode(np.frombuffer(jpeg_bytes, np.uint8), cv2.IMREAD_COLOR)
-        detections = vision.detect_objects(image, confidence=0.5, target_objects=["person", "bottle", "ball", "chair", "key", "shoe"])
-        for det in detections:
-            x1, y1, x2, y2 = map(int, det["bbox"])
-            label = f'{det["class"]} {det["confidence"]:.2f}'
-            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(image, label, (x1, max(y1 - 5, 15)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+    
+    # # vision processing
+    # match = re.search(r'(/9j/[A-Za-z0-9+/]+=*)', result.stdout)
+    # if match:
+    #     jpeg_bytes = base64.b64decode(match.group(1))
+    #     image = cv2.imdecode(np.frombuffer(jpeg_bytes, np.uint8), cv2.IMREAD_COLOR)
+    #     detections = vision.detect_objects(image, confidence=0.5, target_objects=["person", "bottle", "ball", "chair", "key", "shoe"])
         
-        cv2.imshow("Detections", image)
+    #     for det in detections:
+    #         x1, y1, x2, y2 = map(int, det["bbox"])
+    #         label = f'{det["class"]} {det["confidence"]:.2f}'
+    #         cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    #         cv2.putText(image, label, (x1, max(y1 - 5, 15)), 
+    #                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
         
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        print("Leaving Loop.")
-        break
-cv2.destroyAllWindows()
+    #     cv2.imshow("Detections", image)
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):
+    #         print("Leaving Loop.")
+    #         cv2.destroyAllWindows()
+    #         break

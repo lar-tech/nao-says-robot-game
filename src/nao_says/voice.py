@@ -1,6 +1,6 @@
-import os
 import json
 import re
+import sys
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -24,17 +24,31 @@ class NaoVoiceCommand():
         self.model = WhisperModel("small", device="cpu", compute_type="float32", download_root=model_dir, local_files_only=True)
         self.audio = pyaudio.PyAudio()
         self.sample_rate = 16000
+        self.wake_word = "simon says"
 
-    def record_audio(self, duration=5):
+    def record_audio(self, duration=5, show_progress=True):
         stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=self.sample_rate, input=True, frames_per_buffer=1024)
         frames = []
-        for _ in range(0, int(self.sample_rate / 1024 * duration)):
+        total_chunks = int(self.sample_rate / 1024 * duration)
+        for i in range(total_chunks):
             data = stream.read(1024)
             frames.append(np.frombuffer(data, dtype=np.int16))
+
+            if show_progress:
+                progress = (i + 1) / total_chunks
+                bar_len = 30
+                filled = int(bar_len * progress)
+                bar = "█" * filled + "░" * (bar_len - filled)
+                remaining = duration * (1 - progress)
+                sys.stdout.write(f"\r [{bar}] {remaining:.1f}s ")
+                sys.stdout.flush()
+        
+        if show_progress:
+            print()
+
         stream.stop_stream()
         stream.close()
         audio_data = np.concatenate(frames).astype(np.float32) / 32768.0
-
         return audio_data
     
     def transcribe(self, audio_data):
@@ -122,12 +136,26 @@ class NaoVoiceCommand():
         
         return result
 
-    def get_command(self, duration=5):
-        print("Recording audio...")
-        audio = self.record_audio(duration=duration)
-        transcript = self.transcribe(audio)
-        print(f"Transcript: {transcript}")
-        return json.dumps(self.map_command(transcript))
+    def get_command(self):
+        while True:
+            print("Listening for 'Simon says'...")
+            audio = self.record_audio(duration=5, show_progress=True)
+            transcript = self.transcribe(audio).lower()
+
+            if self.wake_word in transcript:
+                # get command after wake word
+                if len(transcript) > len(self.wake_word) + 3:
+                    result = self.map_command(transcript)
+                    result["wakeword"] = True
+                    return json.dumps(result)
+                
+                # listen for command
+                print("Wake word detected. Listening for command...")
+                audio = self.record_audio(duration=5, show_progress=True)
+                transcript = self.transcribe(audio).lower()                
+                result = self.map_command(transcript)
+                result["wakeword"] = True
+                return json.dumps(result)
 
 if __name__ == '__main__':
     recorder = NaoVoiceCommand()
