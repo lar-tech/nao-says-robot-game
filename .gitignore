@@ -21,6 +21,7 @@ test/
 *.ipynb
 
 # data
-models/
+whisper/
+yolov8n.pt
 images/
 *.log
