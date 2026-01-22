@@ -127,7 +127,7 @@ class NaoVoiceCommand():
         audio = self.record_audio(duration=duration)
         transcript = self.transcribe(audio)
         print(f"Transcript: {transcript}")
-        return self.map_command(transcript)
+        return json.dumps(self.map_command(transcript))
 
 if __name__ == '__main__':
     recorder = NaoVoiceCommand()
