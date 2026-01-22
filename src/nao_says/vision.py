@@ -1,16 +1,10 @@
 from ultralytics import YOLO
 import cv2
 import numpy as np
-import onnxruntime as ort
 
 class NaoVision:
-    def __init__(self, yolo_path="./models/yolov8n.pt", mnist_path="./models/mnist.onnx"):
+    def __init__(self, yolo_path="./setup/yolov8n.pt"):
         self.yolo = YOLO(yolo_path)
-        
-        # mnist model
-        self.sess = ort.InferenceSession(mnist_path, providers=["CPUExecutionProvider"])
-        self.input_name = self.sess.get_inputs()[0].name
-        self.output_name = self.sess.get_outputs()[0].name
 
     # object detection
     def detect_objects(self, image, confidence=0.5, target_objects=None):
@@ -30,7 +24,7 @@ class NaoVision:
     
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    vision = NaoVision(yolo_path="./models/yolov8n.pt", mnist_path="./models/mnist.onnx")
+    vision = NaoVision(yolo_path="./setup/yolov8n.pt")
 
     # object detection
     object_image = cv2.imread("images/person.jpg")
