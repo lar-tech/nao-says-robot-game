@@ -1,6 +1,7 @@
 import json
 import re
 import sys
+import math
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -9,16 +10,83 @@ import pyaudio
 class NaoVoiceCommand():
     def __init__(self, model_dir="./setup/whisper"):
         # joint settings
-        self.joints = ["HeadYaw","HeadPitch",
-            "LShoulderPitch","LShoulderRoll","LElbowYaw","LElbowRoll","LWristYaw","LHand",
-            "RShoulderPitch","RShoulderRoll","RElbowYaw","RElbowRoll","RWristYaw","RHand",
-            "HipYawPitch","LHipRoll","LHipPitch","LKneePitch","LAnklePitch","LAnkleRoll",
-            "RHipRoll","RHipPitch","RKneePitch","RAnklePitch","RAnkleRoll"]
-        self.joints_angle_ranges = {"HeadYaw": (-119.5, 119.5), "HeadPitch": (-38.5, 29.5),
-            "LShoulderPitch": (-119.5, 119.5), "LShoulderRoll": (-18.0, 76.0), "LElbowYaw": (-119.5, 119.5), "LElbowRoll": (-88.5, -2.0), "LWristYaw": (-104.5, 104.5), "LHand": (0.0, 1.0),
-            "RShoulderPitch": (-119.5, 119.5), "RShoulderRoll": (-76.0, 18.0), "RElbowYaw": (-119.5, 119.5), "RElbowRoll": (2.0, 88.5), "RWristYaw": (-104.5, 104.5), "RHand": (0.0, 1.0),
-            "HipYawPitch": (-65.62, 42.48), "LHipRoll": (-21.73, 45.0), "LHipPitch": (-88.0, 27.73), "LKneePitch": (0.0, 121.0), "LAnklePitch": (-68.0, 52.87), "LAnkleRoll": (-22.84, 44.5),
-            "RHipRoll": (-45.0, 21.73), "RHipPitch": (-88.0, 27.73), "RKneePitch": (0.0, 121.0), "RAnklePitch": (-68.0, 52.87), "RAnkleRoll": (-44.5, 22.84),}
+        self.commands = {
+            # Postures
+            "StandZero": {"function": "posture", "params": {"posture_name": "StandZero", "speed": 1.0}},
+            "StandInit": {"function": "posture", "params": {"posture_name": "StandInit", "speed": 1.0}},
+            "Stand": {"function": "posture", "params": {"posture_name": "Stand", "speed": 1.0}},
+            "Crouch": {"function": "posture", "params": {"posture_name": "Crouch", "speed": 1.0}},
+            "Sit": {"function": "posture", "params": {"posture_name": "Sit", "speed": 1.0}},
+            "SitRelax": {"function": "posture", "params": {"posture_name": "SitRelax", "speed": 1.0}},
+            "LyingBelly": {"function": "posture", "params": {"posture_name": "LyingBelly", "speed": 1.0}},
+            "LyingBack": {"function": "posture", "params": {"posture_name": "LyingBack", "speed": 1.0}},
+            # Movement
+            "MoveForward": {"function": "move_position", "params": {"x": 0.2, "y": 0.0, "theta": 0.0}},
+            "MoveBackward": {"function": "move_position", "params": {"x": -0.2, "y": 0.0, "theta": 0.0}},
+            "MoveRight": {"function": "move_position", "params": {"x": 0.0, "y": -0.2, "theta": 0.0}},
+            "MoveLeft": {"function": "move_position", "params": {"x": 0.0, "y": 0.2, "theta": 0.0}},
+            "TurnRight": {"function": "move_position", "params": {"x": 0.0, "y": 0.0, "theta": -math.pi / 4}},
+            "TurnLeft": {"function": "move_position", "params": {"x": 0.0, "y": 0.0, "theta": math.pi / 4}},
+            # Head
+            "RotateHead": {"function": "move_joint", "params": {"joint_name": "HeadYaw", "angle": math.pi / 4, "speed": 0.1, "waitingtime": 2.0}},
+            "MoveHead": {"function": "move_joint", "params": {"joint_name": "HeadPitch", "angle": -10, "speed": 0.1, "waitingtime": 2.0}},
+            # Arms
+            "LiftLeftArmFront": {"function": "move_joint", "params": {"joint_name": "LShoulderPitch", "angle": 0, "speed": 0.1, "waitingtime": 2.0}},
+            "LiftRightArmFront": {"function": "move_joint", "params": {"joint_name": "RShoulderPitch", "angle": 0, "speed": 0.1, "waitingtime": 2.0}},
+            "LiftLeftArmSide": {"function": "move_joint", "params": {"joint_name": "LShoulderRoll", "angle": 60, "speed": 0.1, "waitingtime": 2.0}},
+            "LiftRightArmSide": {"function": "move_joint", "params": {"joint_name": "RShoulderRoll", "angle": -60, "speed": 0.1, "waitingtime": 2.0}},
+            "StretchLeftElbow": {"function": "move_joint", "params": {"joint_name": "LElbowRoll", "angle": -2, "speed": 0.1, "waitingtime": 2.0}},
+            "BendLeftElbow": {"function": "move_joint", "params": {"joint_name": "LElbowRoll", "angle": -88, "speed": 0.1, "waitingtime": 2.0}},
+            "StretchRightElbow": {"function": "move_joint", "params": {"joint_name": "RElbowRoll", "angle": 2, "speed": 0.1, "waitingtime": 2.0}},
+            "BendRightElbow": {"function": "move_joint", "params": {"joint_name": "RElbowRoll", "angle": 88, "speed": 0.1, "waitingtime": 2.0}},
+            "TwistLeftWrist": {"function": "move_joint", "params": {"joint_name": "LWristYaw", "angle": -90, "speed": 0.1, "waitingtime": 2.0}},
+            "TwistRightWrist": {"function": "move_joint", "params": {"joint_name": "RWristYaw", "angle": 90, "speed": 0.1, "waitingtime": 2.0}},}
+        
+        self.voice_map = {
+            # Postures
+            "stand zero": "StandZero",
+            "stand init": "StandInit",
+            "stand": "Stand",
+            "crouch": "Crouch",
+            "sit down": "Sit",
+            "sit": "Sit",
+            "sit relax": "SitRelax",
+            "relax": "SitRelax",
+            "lie down": "LyingBelly",
+            "lying belly": "LyingBelly",
+            "lying back": "LyingBack",
+            "lie on back": "LyingBack",
+            # Movement
+            "move forward": "MoveForward",
+            "go forward": "MoveForward",
+            "forward": "MoveForward",
+            "move backward": "MoveBackward",
+            "go backward": "MoveBackward",
+            "backward": "MoveBackward",
+            "move right": "MoveRight",
+            "go right": "MoveRight",
+            "move left": "MoveLeft",
+            "go left": "MoveLeft",
+            "turn right": "TurnRight",
+            "turn left": "TurnLeft",
+            # Head
+            "rotate head": "RotateHead",
+            "turn head": "RotateHead",
+            "move head": "MoveHead",
+            "look down": "MoveHead",
+            # Arms
+            "lift left arm": "LiftLeftArmFront",
+            "raise left arm": "LiftLeftArmFront",
+            "lift right arm": "LiftRightArmFront",
+            "raise right arm": "LiftRightArmFront",
+            "left arm side": "LiftLeftArmSide",
+            "right arm side": "LiftRightArmSide",
+            "stretch left elbow": "StretchLeftElbow",
+            "bend left elbow": "BendLeftElbow",
+            "stretch right elbow": "StretchRightElbow",
+            "bend right elbow": "BendRightElbow",
+            "twist left wrist": "TwistLeftWrist",
+            "twist right wrist": "TwistRightWrist",}
 
         # load audio recorder
         self.model = WhisperModel("small", device="cpu", compute_type="float32", download_root=model_dir, local_files_only=True)
@@ -63,24 +131,10 @@ class NaoVoiceCommand():
         if wakeword:
             text_lower = text_lower[len("simon says"):].strip()
         result = {"wakeword": wakeword, "action": None, "params": None}
-        
-        # colors for eye color
-        colors = {"red", "green", "blue", "yellow"}
-        
-        # directions for movement
-        directions = {
-            "forward": [1, 0, 0], "backward": [-1, 0, 0],
-            "left": [0, -1, 0], "right": [0, 1, 0],
-            "up": [0, 0, 1], "down": [0, 0, -1]
-        }
-        
-        # extract number
-        def find_number(s):
-            m = re.search(r"(\d+\.?\d*)", s)
-            return float(m.group(1)) if m else None
 
         # action matching
         # change_eye_color
+        colors = {"red", "green", "blue", "yellow"}
         if "eye" in text_lower and "color" in text_lower:
             for color in colors:
                 if color in text_lower:
@@ -101,41 +155,15 @@ class NaoVoiceCommand():
             result["params"] = {"text": spoken.strip()}
             return result
         
-        # posture
-        postures = ["stand", "sit", "crouch", "lyingbelly", "lyingback"]
-        for posture in postures:
-            if posture in text_lower:
-                result["action"] = "posture"
-                result["params"] = {"posture_name": posture.capitalize()}
+        # move_position, posture, move_joint
+        for phrase in sorted(self.voice_map.keys(), key=len, reverse=True):
+            if phrase in text_lower:
+                cmd_key = self.voice_map[phrase]
+                cmd = self.commands[cmd_key]
+                result["action"] = cmd["function"]
+                result["params"] = cmd["params"]
                 return result
-        
-        # move_position
-        for direction, vec in directions.items():
-            if direction in text_lower:
-                params = {"direction_vector": vec}
-                num = find_number(text_lower)
-                if num:
-                    if "degree" in text_lower or "°" in text_lower:
-                        params["theta_deg"] = num
-                    else:
-                        params["distance_m"] = num
-                result["action"] = "move_position"
-                result["params"] = params
-                return result
-        
-        # TODO: mapping raise left arm to predefined joint angles
-        # e.g., raise left arm
-        # move_joint
-        for joint in self.joints:
-            if joint.lower() in text_lower:
-                angle = find_number(text_lower)
-                if angle:
-                    result["action"] = "move_joint"
-                    result["params"] = {"joint": joint, "angle_deg": angle}
-                    return result
-        
-        return result
-
+            
     def get_command(self):
         while True:
             print("Listening for 'Simon says'...")
@@ -159,5 +187,6 @@ class NaoVoiceCommand():
 
 if __name__ == '__main__':
     recorder = NaoVoiceCommand()
-    command = recorder.get_command(duration=5)
+    command = recorder.get_command()
     print(command)
+
