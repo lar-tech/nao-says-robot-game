@@ -22,12 +22,9 @@ def dispatch(executor, cmd):
     params = cmd.get("params") or {}
 
     if action == "move_position":
-        dist = params.get("distance_m", 0.0)
-        vec = params.get("direction_vector", [0.0, 0.0, 0.0])
-        theta_deg = params.get("theta_deg", 0.0)
-        x = float(vec[0]) * float(dist)
-        y = float(vec[1]) * float(dist)
-        theta = to_rad(theta_deg)
+        x = float(params.get("x", 0.0))
+        y = float(params.get("y", 0.0))
+        theta = float(params.get("theta", 0.0))  # already in radians from voice.py
         return executor.move_position(x=x, y=y, theta=theta)
 
     if action == "posture":
@@ -35,9 +32,11 @@ def dispatch(executor, cmd):
         return executor.posture(posture_name=posture_name, speed=1.0)
 
     if action == "move_joint":
-        joint = to_str(params.get("joint", "HeadYaw"))
-        angle = to_rad(params.get("angle_deg", 0.0))
-        return executor.move_joint(joint_name=joint, angle=angle, speed=0.1, waitingtime=2.0)
+        joint = to_str(params.get("joint_name", "HeadYaw"))
+        angle = float(params.get("angle", 0.0))  # already in radians from voice.py
+        speed = float(params.get("speed", 0.1))
+        waitingtime = float(params.get("waitingtime", 2.0))
+        return executor.move_joint(joint_name=joint, angle=angle, speed=speed, waitingtime=waitingtime)
 
     if action == "change_eye_color":
         color = to_str(params.get("color", "yellow"))
@@ -63,7 +62,6 @@ def main():
     ip = sys.argv[1]
     port = int(sys.argv[2])
     cmd = json.loads(sys.stdin.read() or "{}")
-    sys.stderr.write("Received command: {}\n".format(cmd))
     executor = NaoTaskExecutor(ip, port)
 
     try:
