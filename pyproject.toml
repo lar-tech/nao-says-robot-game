@@ -11,12 +11,11 @@ requires-python = ">=3.9"
 dependencies = [
     "opencv-python",
     "numpy",
-    "torch",
-    "transformers",
     "ultralytics",
     "onnxruntime",
     "huggingface-hub",
-    "RealtimeSTT",
+    "faster-whisper",
+    "pyaudio",
 ]
 
 [project.scripts]
