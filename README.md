@@ -30,37 +30,37 @@ naoqi-docker/                         # Parent directory
                     PYTHON 3.13 (Host Machine)                   
                                                                  
   1. Voice Input                                                 
-     └─→ Record 5s audio                                         
-     └─→ Whisper transcription                                   
-     └─→ Detect "simon says" wake word                           
-     └─→ Map voice to command JSON                               
+     └─ Record 5s audio                                         
+     └─ Whisper transcription                                   
+     └─ Detect "simon says" wake word                           
+     └─ Map voice to command JSON                               
                                                                  
   2. Send command to Docker subprocess via stdin                 
 
                DOCKER CONTAINER (Python 2.7 + NAOqi)             
                                                                  
   3. Command Dispatch                                            
-     └─→ Parse JSON command                                      
-     └─→ Execute robot action:                                   
+     └─ Parse JSON command                                      
+     └─ Execute robot action:                                   
          • Postures (Stand, Sit, Crouch, etc.)                   
          • Movement (Forward, Backward, Turn)                    
          • Joint control (Arms, Head)                            
          • Eye color (LEDs)                                      
          • Text-to-speech                                        
-     └─→ Capture image from robot camera                         
-     └─→ Return Base64 JPEG via stdout                           
+     └─ Capture image from robot camera                         
+     └─ Return Base64 JPEG via stdout                           
 
                     PYTHON 3.13 (Host Machine)                   
                                                                  
   4. Vision Processing                                           
-     └─→ Decode Base64 image                                     
-     └─→ Run YOLOv8 object detection                             
-     └─→ Filter targets (person, bottle, ball, etc.)             
+     └─ Decode Base64 image                                     
+     └─ Run YOLOv8 object detection                             
+     └─ Filter targets (person, bottle, ball, etc.)             
                                                                  
   5. Response                                                    
-     └─→ Generate description: "I see 1 person, 2 bottles"       
-     └─→ Send say_text command to robot                          
-     └─→ Display annotated image                                 
+     └─ Generate description: "I see 1 person, 2 bottles"       
+     └─ Send say_text command to robot                          
+     └─ Display annotated image                                 
                                                                  
   6. Loop until "game over"                       
 
