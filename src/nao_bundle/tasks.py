@@ -77,7 +77,7 @@ class NaoTaskExecutor:
         self.motion_proxy.wakeUp()
         self.motion_proxy.setStiffnesses(joint_name, 1.0)
         self.motion_proxy.setAngles(joint_name, angle, speed)
-        self.tts_proxy.say("Movement of joint {} complete!".format(joint_name))
+        self.tts_proxy.say("Movement of joint complete!")
         time.sleep(waitingtime)
         self.motion_proxy.setStiffnesses(joint_name, 0.0)
         self.motion_proxy.rest()
