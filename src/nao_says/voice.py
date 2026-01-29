@@ -132,6 +132,11 @@ class NaoVoiceCommand():
             text_lower = text_lower[len("simon says"):].strip()
         result = {"wakeword": wakeword, "action": None, "params": None}
 
+        if "game over" in text_lower:
+            result["action"] = "game_over"
+            result["params"] = {}
+            return result
+
         # action matching
         # change_eye_color
         colors = {"red", "green", "blue", "yellow"}
@@ -163,7 +168,9 @@ class NaoVoiceCommand():
                 result["action"] = cmd["function"]
                 result["params"] = cmd["params"]
                 return result
-            
+
+        return result
+
     def get_command(self):
         while True:
             print("Listening for 'Simon says'...")
