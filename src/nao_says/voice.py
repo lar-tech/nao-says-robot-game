@@ -122,12 +122,18 @@ class NaoVoiceCommand():
         segments, _ = self.model.transcribe(audio_data, language="en")
         return " ".join(segment.text for segment in segments).strip()
     
+    def _clean(self, text: str) -> str:
+        return text.replace(",", "").replace(".", "").replace("!", "").replace("?", "").strip()
+
     def map_command(self, text: str) -> dict:
+        text = self._clean(text)
         text_lower = text.lower().strip()
-        
+        print(text_lower)
+
         # wakeword check
         wakeword = text_lower.startswith("simon says")
         if wakeword:
+            text = text[len("simon says"):].strip()
             text_lower = text_lower[len("simon says"):].strip()
         result = {"wakeword": wakeword, "action": None, "params": None}
 
@@ -154,7 +160,7 @@ class NaoVoiceCommand():
         
         # say_text
         if text_lower.startswith("say "):
-            spoken = text[len("simon says say "):] if wakeword else text[len("say "):]
+            spoken = text[len("say "):]
             result["action"] = "say_text"
             result["params"] = {"text": spoken.strip()}
             return result
