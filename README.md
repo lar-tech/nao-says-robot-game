@@ -185,3 +185,17 @@ If your action fits an existing pattern, you only need to modify `voice.py`:
 | `say_text` | `tts_proxy.say()` | Speech output |
 | `capture_frame` | `cam_proxy.getImageRemote()` | Camera capture |
 
+## Challenges
+It was pretty challenging to work with the NAO robot on macOS since the NAOqi SDK only supports Linux. We had to use Docker to create a Linux environment for the robot control code while running the ML models on the host machine. Integrating Python 3 and Python 2 code was also tricky, but we solved it by using subprocess communication between the two environments. 
+
+The biggest challenge was designing a robust command parsing and execution pipeline that could handle various voice inputs and map them to complex robot actions. We had to implement a flexible system that could easily be extended with new commands and behaviors. Therefore, the taks that the robot can now perform seem pretty basic but the underlying architecture allows us to easily add more complex behaviors in the future.
+
+Now to the implementation challenges. We used different packages for speech recognition but using the Whisper model is the most straight forward approach. We tested some other packages but they are either to bloated or needed a internet connection to work. Therefore, using a local model like Whisper was the best choice for this project. For Object Detection we decided to use the YOLO model since it is pretty lightweight and fast which can be usefull when extending this project with video recordings and real-time detection.
+
+## Future Improvements
+Here are some ideas for future improvements to enhance the game and make it more engaging:
+
+- Add more complex robot behaviors (dancing, interactive games)
+- Implement real-time video processing for continuous object detection
+- Enhance voice command recognition with contextual understanding using NLP techniques
+- Wake word detection and then start recording to avoid unnecessary processing and improve responsiveness

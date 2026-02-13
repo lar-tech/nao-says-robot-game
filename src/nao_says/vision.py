@@ -1,6 +1,4 @@
 from ultralytics import YOLO
-import cv2
-import numpy as np
 
 class NaoVision:
     def __init__(self, yolo_path="./setup/yolov8n.pt"):

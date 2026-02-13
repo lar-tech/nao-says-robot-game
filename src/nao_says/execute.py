@@ -57,7 +57,7 @@ while True:
                     parts.append(f"{count} {cls}s")
 
             description = "I see " + ", ".join(parts[:-1]) + (" and " + parts[-1] if len(parts) > 1 else parts[0] if parts else "")
-
+            print(description)
             # send say_text command to robot
             say_command = json.dumps({'wakeword': True, 'action': 'say_text', 'params': {'text': description}})
             cmd = [os.path.join(docker_dir, "run-naoqi.sh"), "python2.7", "src/nao_bundle/execute.py", ROBOT_IP, PORT]
