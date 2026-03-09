@@ -2,6 +2,8 @@
 
 An interactive voice-controlled "Simon Says" game for the NAO humanoid robot. Users speak commands starting with "Simon Says", the robot executes actions (postures, movements, speech), captures images, performs object detection, and describes what it sees.
 
+Here are ![clips of a short demo](https://drive.google.com/drive/folders/1xMSwrEviUmQfL944f7l0rnKBTy7BlEyE).
+
 ## Project Structure
 
 ```
